@@ -94,27 +94,25 @@ func RunScript(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-	scriptDir := "/"
+    projectDir := "/home/ubuntu"
+    scriptDir := projectDir + "/Neiro"
     scriptPath := "run.py"
     outputDir := "output/"
-
-    cwd, _ := os.Getwd()
-    fmt.Printf("Current working directory: %s\n", cwd)
-
-	if err := os.Chdir(scriptDir); err != nil {
+    
+    if err := os.Chdir(scriptDir); err != nil {
+        log.Printf("Error changing directory: %v", err)
         http.Error(w, fmt.Sprintf("Error changing directory: %v", err), http.StatusInternalServerError)
         return
     }
 
-	cwd, _ = os.Getwd()
-    fmt.Printf("Changed working directory to: %s\n", cwd)
-
-    cmd := exec.Command("python3", scriptPath, data.Filename, "--output-dir", outputDir)
+    cmd := exec.Command("bash", "-c", fmt.Sprintf("source %s/myenv/bin/activate && python %s %s --output-dir %s",
+        projectDir, scriptPath, data.Filename, outputDir))
 
     output, err := cmd.CombinedOutput()
     if err != nil {
-		log.Printf("Script output: %s", output)
-        http.Error(w, fmt.Sprintf("Error running script: %v", err), http.StatusInternalServerError)
+        log.Printf("Error running script: %v", err)
+        log.Printf("Script output: %s", output)
+        http.Error(w, fmt.Sprintf("Error running script: %v\nOutput:\n%s", err, output), http.StatusInternalServerError)
         return
     }
 

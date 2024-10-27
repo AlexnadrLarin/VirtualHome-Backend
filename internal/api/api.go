@@ -4,11 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"go-project/internal/database"
+
+	"github.com/gorilla/mux"
 )
 
 var dbPool, _ = database.ConnectDB()
@@ -18,6 +22,10 @@ type MeshObjectResponse struct {
 	Name       string `json:"name"`
 	UploadTime string `json:"upload_time"`
 	Data       string `json:"data"` 
+}
+
+type RequestData struct {
+    Filename string `json:"filename"`
 }
 
 func SaveMeshObjectHandler(w http.ResponseWriter, r *http.Request) {
@@ -75,4 +83,41 @@ func GetMeshObjectHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func RunScript(w http.ResponseWriter, r *http.Request) {
+
+    var data RequestData
+    err := json.NewDecoder(r.Body).Decode(&data)
+    if err != nil || data.Filename == "" {
+        http.Error(w, "Invalid request data", http.StatusBadRequest)
+        return
+    }
+
+	scriptDir := "/"
+    scriptPath := "run.py"
+    outputDir := "output/"
+
+    cwd, _ := os.Getwd()
+    fmt.Printf("Current working directory: %s\n", cwd)
+
+	if err := os.Chdir(scriptDir); err != nil {
+        http.Error(w, fmt.Sprintf("Error changing directory: %v", err), http.StatusInternalServerError)
+        return
+    }
+
+	cwd, _ = os.Getwd()
+    fmt.Printf("Changed working directory to: %s\n", cwd)
+
+    cmd := exec.Command("python3", scriptPath, data.Filename, "--output-dir", outputDir)
+
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+		log.Printf("Script output: %s", output)
+        http.Error(w, fmt.Sprintf("Error running script: %v", err), http.StatusInternalServerError)
+        return
+    }
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(output)
 }

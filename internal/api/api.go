@@ -88,11 +88,6 @@ func GetMeshObjectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadImage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		http.Error(w, "Error retrieving the file", http.StatusBadRequest)

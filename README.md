@@ -1,1 +1,1 @@
-# VirtualHome-Backend
+# Go Backend для приложения VirtualHome

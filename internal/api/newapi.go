@@ -229,6 +229,37 @@ func PollTask(w http.ResponseWriter, taskID string) (string, error) {
 	}
 }
 
+func PollTaskComplite(w http.ResponseWriter, taskID string) (string, error) {
+        client := &http.Client{}
+        for {
+                req, err := http.NewRequest("GET", fmt.Sprintf("%s/task/%s", baseURL, taskID), nil)
+                if err != nil {
+                        return "", fmt.Errorf("failed to create request: %v", err)
+                }
+
+                req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+                resp, err := client.Do(req)
+                if err != nil {
+                        return "", fmt.Errorf("failed to send request: %v", err)
+                }
+                defer resp.Body.Close()
+                log.Println("2.5 Part: ", resp)
+
+                var finalResp FinalResponse
+                if err := json.NewDecoder(resp.Body).Decode(&finalResp); err != nil {
+                        return "", fmt.Errorf("failed to parse response: %v", err)
+                }
+
+                log.Println("2.5 Part status", finalResp.Data.Status)
+                if finalResp.Data.Status == "success" {
+                        return finalResp.Data.TaskID, nil
+                }
+
+                time.Sleep(5 * time.Second)
+        }
+}
+
+
 func downloadFile(url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -272,9 +303,16 @@ func ProcessAll(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("2 Part finished")
 
-	time.Sleep(20 * time.Second)
+        log.Println("2.5 Part started")
+	taskID, err := PollTaskComplite(w, taskResp.Data.TaskID)
+        if err != nil {
+                http.Error(w, fmt.Sprintf("Failed to poll task: %v", err), http.StatusInternalServerError)
+                return
+        }
+        log.Println("2.5 Part finished")
+
 	log.Println("3 Part started")
-	convResp, err := CreateModelConversionTask(w, taskResp.Data.TaskID)
+	convResp, err := CreateModelConversionTask(w, taskID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create model conversion task: %v", err), http.StatusInternalServerError)
 		return

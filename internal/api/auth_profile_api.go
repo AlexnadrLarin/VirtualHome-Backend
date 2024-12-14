@@ -2,18 +2,36 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"go-project/internal/database"
 )
 
+type User struct {
+    ID          int    `json:"id"`
+    Nickname    string `json:"nickname"`
+    Password    string `json:"password"`
+}
+
+type Profile struct {
+    ID         int    `json:"id"`
+    UserID     int    `json:"user_id"`
+    FirstName  string `json:"first_name"`
+    LastName   string `json:"last_name"`
+    Bio        string `json:"bio"`
+}
+
+type Item struct {
+    ID         int       `json:"id"`
+    CatalogID  int       `json:"catalog_id"`
+    Name       string    `json:"name"`
+    Object3D   []byte    `json:"object_3d"`
+    Photo      []byte    `json:"photo"`
+}
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	var user struct {
-		Nickname string `json:"nickname"`
-		Password string `json:"password"`
-	}
-
+	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
@@ -21,6 +39,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := database.CreateUser(DbPool, user.Nickname, user.Password)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to register user", http.StatusInternalServerError)
 		return
 	}
@@ -30,11 +49,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var user struct {
-		Nickname string `json:"nickname"`
-		Password string `json:"password"`
-	}
-
+	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
@@ -51,13 +66,19 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
-	var profile database.Profile
-	if err := json.NewDecoder(r.Body).Decode(&profile); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
+    var req Profile
+    err := json.NewDecoder(r.Body).Decode(&req)
+    if err != nil {
+        http.Error(w, "Invalid JSON", http.StatusBadRequest)
+        return
+    }
 
-	_, err := database.CreateProfile(DbPool, profile.UserID, profile.FirstName, profile.LastName, profile.Bio)
+    if req.UserID == 0 {
+        http.Error(w, "Invalid user_id", http.StatusBadRequest)
+        return
+    }
+
+	_, err = database.CreateProfile(DbPool, req.UserID, req.FirstName, req.LastName, req.Bio)
 	if err != nil {
 		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
 		return
@@ -68,14 +89,17 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddCatalogItemHandler(w http.ResponseWriter, r *http.Request) {
-	var item database.Item
+	var item Item
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		fmt.Print(err)
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
+	fmt.Println(item.CatalogID, item.Name, item.Object3D, item.Photo)
 	itemID, err := database.CreateItem(DbPool, item.CatalogID, item.Name, item.Object3D, item.Photo)
 	if err != nil {
+		fmt.Print(err)
 		http.Error(w, "Failed to add item", http.StatusInternalServerError)
 		return
 	}

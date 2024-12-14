@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -27,7 +27,6 @@ type Item struct {
 	Name       string
 	Object3D   []byte
 	Photo      []byte
-	UploadTime time.Time
 }
 
 func CreateUser(db *pgxpool.Pool, nickname string, password string) (int, error) {
@@ -35,6 +34,7 @@ func CreateUser(db *pgxpool.Pool, nickname string, password string) (int, error)
 	query := `INSERT INTO users (nickname, password) VALUES ($1, $2) RETURNING id`
 	err := db.QueryRow(context.Background(), query, nickname, password).Scan(&id)
 	if err != nil {
+		fmt.Println(err)
 		return 0, err
 	}
 	return id, nil
@@ -75,10 +75,24 @@ func DeleteUserByID(db *pgxpool.Pool, id int) (error) {
 	return nil
 }
 
+func UserExists(db *pgxpool.Pool, user_id int) (bool, error) {
+    var exists bool
+    query := `SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)`
+    err := db.QueryRow(context.Background(), query, user_id).Scan(&exists)
+    if err != nil {
+        return false, err
+    }
+    return exists, nil
+}
+
 func CreateProfile(db *pgxpool.Pool, user_id int, first_name string, last_name string, bio string) (int, error) {
+	exists, err := UserExists(db, user_id)
+	if err != nil || !exists {
+		return 0, fmt.Errorf("user with id %d does not exist", user_id)
+	}
 	var id int
 	query := `INSERT INTO profiles (user_id, first_name, last_name, bio) VALUES ($1, $2, $3, $4) RETURNING id`
-	err := db.QueryRow(context.Background(), query, user_id, first_name, last_name, bio).Scan(&id)
+	err = db.QueryRow(context.Background(), query, user_id, first_name, last_name, bio).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -110,7 +124,7 @@ func DeleteProfileВyID(db *pgxpool.Pool, id int) (error) {
 func CreateItem(db *pgxpool.Pool, catalog_id int, name string, object_3d []byte, photo []byte) (int, error) {
 	var id int
 	query := `INSERT INTO items (catalog_id, name, object_3d, photo) VALUES ($1, $2, $3, $4) RETURNING id`
-	err := db.QueryRow(context.Background(), query, catalog_id, object_3d, photo).Scan(&id)
+	err := db.QueryRow(context.Background(), query, catalog_id, name, object_3d, photo).Scan(&id)
 	if err != nil {
 		return 0, err
 	}

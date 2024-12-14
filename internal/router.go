@@ -19,10 +19,10 @@ func SetupRouter() (*mux.Router) {
 	router.HandleFunc("/api/mesh/{id:[0-9]+}", api.GetMeshObjectHandler).Methods("GET")
 	router.HandleFunc("/api/upload", api.UploadImage).Methods("POST")
 
-	router.HandleFunc("/api/register", api.RegisterHandler)
-	router.HandleFunc("/api/login", api.LoginHandler)
-	router.HandleFunc("/api/update-profile", api.UpdateProfileHandler)
-	router.HandleFunc("/api/add-item", api.AddCatalogItemHandler)
+	router.HandleFunc("/api/register", api.RegisterHandler).Methods("POST")
+	router.HandleFunc("/api/login", api.LoginHandler).Methods("POST")
+	router.HandleFunc("/api/update-profile", api.UpdateProfileHandler).Methods("POST")
+	router.HandleFunc("/api/add-item", api.AddCatalogItemHandler).Methods("POST")
 
 	return router
 }

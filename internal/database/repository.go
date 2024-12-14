@@ -25,7 +25,7 @@ func ConnectDB() (*pgxpool.Pool, error) {
 
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
-	user := os.Getenv("USERNAME")
+	user := "postgres"
 	password := os.Getenv("PASSWORD")
 	dbname := os.Getenv("DATABASE")
 

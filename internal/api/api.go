@@ -19,7 +19,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var dbPool, _ = database.ConnectDB()
+var DbPool, _ = database.ConnectDB()
 
 type MeshObjectResponse struct {
 	ID         int    `json:"id"`
@@ -180,7 +180,7 @@ func SaveMeshObjectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("Successfully read file data")
 
-	meshID, err := database.SaveMeshObject(dbPool, requestData.Name, data)
+	meshID, err := database.SaveMeshObject(DbPool, requestData.Name, data)
 	if err != nil {
 		log.Printf("Failed to save object to database: %v", err)
 		http.Error(w, "Failed to save object", http.StatusInternalServerError)
@@ -213,7 +213,7 @@ func GetMeshObjectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Parsed ID: %d", id)
 
-	mesh, err := database.GetMeshObjectByID(dbPool, id)
+	mesh, err := database.GetMeshObjectByID(DbPool, id)
 	if err != nil {
 		log.Printf("Failed to fetch object with ID %d: %v", id, err)
 		http.Error(w, "Object not found", http.StatusNotFound)
